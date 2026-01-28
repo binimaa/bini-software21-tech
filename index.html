@@ -1,0 +1,2500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HABESHA BINGO PRO V2 - Enhanced</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #5D5CDE;
+            --grid-border-color: #3b82f6;
+            --card-selected-color: #3b82f6;
+            --card-hover-color: #dbeafe;
+            --card-unselected-color: #f8f9fa;
+            --background-gradient: linear-gradient(135deg, #c0c0c0 0%, #e6e6e6 50%, #b8b8b8 100%);
+            --sidebar-width: 250px;
+        }
+
+        body {
+            background: var(--background-gradient);
+            min-height: 100vh;
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-gradient: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+                --card-unselected-color: #374151;
+            }
+            body {
+                color: #e5e5e5;
+            }
+        }
+        
+        .bingo-ball {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            color: white;
+            margin: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .bingo-ball:hover {
+            transform: scale(1.1);
+        }
+        .bingo-ball.selected {
+            box-shadow: 0 0 0 4px #fbbf24;
+        }
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            gap: 3px;
+            max-width: 900px;
+        }
+        .bingo-board {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            gap: 2px;
+        }
+        .board-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .board-cell.called {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.8);
+            animation: pulse 1s ease-in-out;
+            position: relative;
+        }
+        
+        .board-cell.called::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .winner-pattern {
+            background: linear-gradient(45deg, #10b981, #34d399) !important;
+            animation: winnerGlow 1s infinite alternate;
+        }
+        
+        @keyframes winnerGlow {
+            from { box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+            to { box-shadow: 0 0 30px rgba(16, 185, 129, 1); }
+        }
+        
+        .shuffle-animation {
+            animation: shuffleBounce 0.5s ease-in-out;
+        }
+        
+        @keyframes shuffleBounce {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(0.95) rotate(-5deg); }
+            75% { transform: scale(1.05) rotate(5deg); }
+        }
+        
+        .current-ball {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff9500, #ffb347);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            box-shadow: 0 12px 35px rgba(255, 149, 0, 0.4);
+            border: 4px solid #fff;
+            position: relative;
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 12px 35px rgba(255, 149, 0, 0.4); }
+            to { box-shadow: 0 12px 45px rgba(255, 149, 0, 0.8); }
+        }
+        
+        .current-ball::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+            z-index: -1;
+            animation: rotate 3s linear infinite;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .unified-grid-container {
+            border: 3px solid var(--grid-border-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .grid-header {
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            color: white;
+        }
+
+        .grid-content {
+            min-height: 400px;
+        }
+
+        .grid-wrapper {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .card-grid-enhanced {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            gap: 8px;
+            max-width: 100%;
+        }
+        
+        .card-number {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: 3px solid var(--grid-border-color);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--card-unselected-color);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #1e293b;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .card-number:hover {
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-color: var(--primary-color);
+            background: var(--card-hover-color);
+        }
+        
+        .card-number.selected {
+            background: linear-gradient(135deg, var(--card-selected-color) 0%, #1d4ed8 100%);
+            color: white;
+            border-color: #fbbf24;
+            transform: scale(1.15);
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.7);
+            z-index: 2;
+        }
+
+        .card-number.selected::after {
+            content: '✓';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #fbbf24;
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .card-number.unselected {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-color: #dee2e6;
+            color: #6c757d;
+            opacity: 0.7;
+        }
+
+        /* Card Preview Styles */
+        .card-number-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .card-preview-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .card-number-container:hover .card-preview-btn {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card-preview-btn:hover {
+            background: #218838;
+            transform: scale(1.05);
+        }
+
+        /* Bingo Card Styles */
+        .bingo-card {
+            background: white;
+            border: 3px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .bingo-card-large {
+            width: 400px;
+        }
+
+        .bingo-card-small {
+            width: 250px;
+        }
+
+        .bingo-card-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border-radius: 5px;
+        }
+
+        .bingo-card-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .bingo-card-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .bingo-header-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+            margin-bottom: 5px;
+        }
+
+        .bingo-header-cell {
+            background: #007bff;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 8px;
+            border-radius: 3px;
+        }
+
+        .bingo-card-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+        }
+
+        .bingo-cell {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            text-align: center;
+            padding: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            border-radius: 3px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bingo-cell.free-cell {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Improved Sidebar Styles */
+        .sidebar {
+            background-color: #374151;
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: calc(-1 * var(--sidebar-width));
+            transition: left 0.3s ease;
+            z-index: 1050;
+            padding-top: 70px;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar.show {
+            left: 0;
+        }
+
+        /* Show sidebar by default on larger screens */
+        @media (min-width: 992px) {
+            .sidebar {
+                left: 0;
+            }
+            
+            .main-content-container {
+                margin-left: var(--sidebar-width);
+                transition: margin-left 0.3s ease;
+            }
+
+            /* Hide mobile menu toggle on larger screens */
+            .mobile-menu-toggle {
+                display: none;
+            }
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 991px) {
+            .main-content-container {
+                margin-left: 0;
+            }
+            
+            .sidebar {
+                left: calc(-1 * var(--sidebar-width));
+            }
+        }
+
+        .sidebar .nav-link {
+            color: #d1d5db;
+            padding: 15px 20px;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #4b5563;
+            color: white;
+            padding-left: 25px;
+        }
+
+        .sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar .nav-link i {
+            width: 20px;
+            margin-right: 10px;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .table-responsive {
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(93, 92, 222, 0.25);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #4c4bbd;
+            border-color: #4c4bbd;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 0.875rem;
+        }
+
+        .loading {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        /* Quick Navigation Bar for Mobile */
+        .quick-nav {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary-color);
+            border-radius: 25px;
+            padding: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1040;
+        }
+
+        @media (max-width: 991px) {
+            .quick-nav {
+                display: flex;
+                gap: 5px;
+            }
+        }
+
+        .quick-nav .nav-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .quick-nav .nav-btn:hover,
+        .quick-nav .nav-btn.active {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        /* Full Screen Styles */
+        .fullscreen-active {
+            background: #000 !important;
+        }
+
+        .fullscreen-active .main-content-container {
+            margin-left: 0 !important;
+            padding: 20px !important;
+        }
+
+        .fullscreen-active .navbar,
+        .fullscreen-active .sidebar,
+        .fullscreen-active .quick-nav {
+            display: none !important;
+        }
+
+        /* Card Selection Status Display */
+        .card-status-display {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .card-status-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .card-status-selected {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1d4ed8;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .card-status-unselected {
+            background: rgba(108, 117, 125, 0.1);
+            color: #495057;
+            border: 2px solid rgba(108, 117, 125, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .card-grid-enhanced {
+                grid-template-columns: repeat(10, 1fr);
+            }
+            
+            .card-number {
+                width: 45px;
+                height: 45px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .card-grid-enhanced {
+                grid-template-columns: repeat(8, 1fr);
+            }
+            
+            .card-number {
+                width: 35px;
+                height: 35px;
+                font-size: 12px;
+            }
+            
+            .quick-nav .nav-btn {
+                padding: 6px 8px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal show">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Login to HABESHA BINGO PRO V2</h5>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" id="loginUsername" class="form-control" value="admin" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="loginPassword" class="form-control" value="admin123" required>
+                        </div>
+                        <div id="loginError" class="error d-none">Invalid username or password</div>
+                        <div id="loginLoading" class="loading d-none">Logging in...</div>
+                        <button type="submit" class="btn btn-danger w-100">Login</button>
+                    </form>
+                    <div class="mt-3 text-muted small">
+                        <p><strong>Default Admin:</strong> admin / admin123</p>
+                        <p><strong>Test User:</strong> user1 / user123</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Preview Modal -->
+    <div id="cardPreviewModal" class="modal">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="cardPreviewTitle">Card Preview</h5>
+                    <button type="button" class="btn-close btn-close-white" onclick="closeModal('cardPreviewModal')"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="cardPreviewContent" class="d-flex justify-content-center">
+                        <!-- Card content will be inserted here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('cardPreviewModal')">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="selectCardFromPreview()" id="selectCardBtn">Select Card</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Create/Edit Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="userModalTitle">Create User</h5>
+                    <button type="button" class="btn-close btn-close-white" onclick="closeModal('userModal')"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <input type="hidden" id="userId" name="id">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Full Name *</label>
+                                    <input type="text" id="userName" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Username *</label>
+                                    <input type="text" id="userUsername" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Shop Name *</label>
+                                    <input type="text" id="userShopName" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Password *</label>
+                                    <input type="password" id="userPassword" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Credit (ETB) *</label>
+                                    <input type="number" id="userCredit" class="form-control" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Commission % *</label>
+                                    <input type="number" id="userPercent" class="form-control" min="0" max="100" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Role *</label>
+                                    <select id="userRole" class="form-select" required>
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3" id="restrictedSection">
+                            <div class="form-check">
+                                <input type="checkbox" id="userRestricted" class="form-check-input">
+                                <label class="form-check-label" for="userRestricted">Account Restricted</label>
+                            </div>
+                        </div>
+                        <div id="userError" class="error d-none"></div>
+                        <div id="userLoading" class="loading d-none">Processing...</div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('userModal')">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUser()">Save User</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Change Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Change Password</h5>
+                    <button type="button" class="btn-close" onclick="closeModal('passwordModal')"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="passwordForm">
+                        <input type="hidden" id="passwordUserId">
+                        <div class="mb-3">
+                            <label class="form-label">Current Password</label>
+                            <input type="password" id="currentPassword" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">New Password</label>
+                            <input type="password" id="newPassword" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" id="confirmPassword" class="form-control" required>
+                        </div>
+                        <div id="passwordError" class="error d-none"></div>
+                        <div id="passwordLoading" class="loading d-none">Changing password...</div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('passwordModal')">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="changePassword()">Change Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" onclick="closeModal('deleteModal')"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this user?</p>
+                    <p><strong id="deleteUserName"></strong></p>
+                    <p class="text-muted small">This action cannot be undone.</p>
+                    <input type="hidden" id="deleteUserId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete User</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-danger fixed-top">
+        <div class="container-fluid">
+            <button class="navbar-toggler border-0 mobile-menu-toggle" type="button" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="navbar-brand d-flex align-items-center">
+                <div class="bg-white rounded-circle p-2 me-2">
+                    <i class="fas fa-dice text-danger"></i>
+                </div>
+                <span class="h4 mb-0">HABESHA BINGO PRO V2</span>
+            </div>
+            <div class="d-flex align-items-center">
+                <span id="currentDateTime" class="text-light small me-3"></span>
+                <div class="d-flex align-items-center gap-2">
+                    <span id="userDisplay" class="badge bg-light text-danger">Guest</span>
+                    <button onclick="logout()" class="btn btn-outline-light btn-sm" title="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <nav class="nav flex-column">
+            <a href="#" onclick="showView('dashboard')" class="nav-link" data-view="dashboard">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="#" onclick="showView('bingo')" class="nav-link" data-view="bingo">
+                <i class="fas fa-th"></i> Bingo
+            </a>
+            <a href="#" onclick="showView('sales')" class="nav-link" data-view="sales">
+                <i class="fas fa-dollar-sign"></i> Sales
+            </a>
+            <a href="#" onclick="showView('balance')" class="nav-link" data-view="balance">
+                <i class="fas fa-balance-scale"></i> Balance
+            </a>
+            <a href="#" onclick="showView('setting')" class="nav-link" data-view="setting">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+            <a href="#" onclick="showView('users')" class="nav-link" id="userManagementMenuItem" data-view="users">
+                <i class="fas fa-users"></i> User Management
+            </a>
+        </nav>
+    </div>
+
+    <!-- Quick Navigation for Mobile -->
+    <div class="quick-nav" id="quickNav">
+        <button class="nav-btn" onclick="showView('dashboard')" data-view="dashboard">
+            <i class="fas fa-home"></i>
+        </button>
+        <button class="nav-btn" onclick="showView('bingo')" data-view="bingo">
+            <i class="fas fa-th"></i>
+        </button>
+        <button class="nav-btn" onclick="showView('sales')" data-view="sales">
+            <i class="fas fa-dollar-sign"></i>
+        </button>
+        <button class="nav-btn" onclick="showView('balance')" data-view="balance">
+            <i class="fas fa-balance-scale"></i>
+        </button>
+        <button class="nav-btn" onclick="showView('setting')" data-view="setting">
+            <i class="fas fa-cog"></i>
+        </button>
+        <button class="nav-btn" onclick="showView('users')" id="quickNavUsers" data-view="users">
+            <i class="fas fa-users"></i>
+        </button>
+    </div>
+
+    <!-- Overlay -->
+    <div id="overlay" class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-none" style="z-index: 1040;" onclick="toggleSidebar()"></div>
+
+    <!-- Main Content -->
+    <main class="main-content-container" style="padding-top: 80px;">
+        <div class="container-fluid">
+            <!-- Dashboard View -->
+            <div id="dashboardView" class="view">
+                <div class="main-content">
+                    <div class="alert alert-success">
+                        Welcome <span id="welcomeUser">Guest</span> to HABESHA BINGO PRO V2 - Enhanced Edition
+                    </div>
+                    
+                    <div class="row g-4">
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="h1" id="todayGames">0</div>
+                                            <div class="text-success-emphasis">Today Games</div>
+                                        </div>
+                                        <div class="display-1 opacity-25">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="h1">150</div>
+                                            <div class="text-primary-emphasis">Available Cards</div>
+                                        </div>
+                                        <div class="display-1 opacity-25">
+                                            <i class="fas fa-th"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="h1" id="selectedCards">0</div>
+                                            <div class="text-info-emphasis">Selected Cards</div>
+                                        </div>
+                                        <div class="display-1 opacity-25">
+                                            <i class="fas fa-check-square"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="h1" id="totalBalance">0</div>
+                                            <div class="text-warning-emphasis">Balance (ETB)</div>
+                                        </div>
+                                        <div class="display-1 opacity-25">
+                                            <i class="fas fa-wallet"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bingo View -->
+            <div id="bingoView" class="view d-none">
+                <div class="main-content">
+                    <h2 class="h3 mb-4"><i class="fas fa-th me-2"></i> SELECT CARDS</h2>
+                    
+                    <!-- Card Selection Status -->
+                    <div class="card-status-display">
+                        <div class="d-flex flex-wrap gap-3 align-items-center">
+                            <div class="card-status-item card-status-selected">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Selected: <strong id="selectedCardCount">0</strong></span>
+                            </div>
+                            <div class="card-status-item card-status-unselected">
+                                <i class="fas fa-circle"></i>
+                                <span>Unselected: <strong id="unselectedCardCount">150</strong></span>
+                            </div>
+                            <div class="ms-auto">
+                                <button onclick="showUnselectedCards()" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-eye me-1"></i> View Unselected
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Unified Grid Container -->
+                    <div class="unified-grid-container card border-primary shadow-lg">
+                        <!-- Header Section -->
+                        <div class="grid-header card-header p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="text-white mb-0">Card Selection Grid (150 Fixed Cards)</h5>
+                                <div class="d-flex gap-2">
+                                    <button onclick="clearAllCards()" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-eraser me-1"></i> Clear All
+                                    </button>
+                                    <button onclick="showSelectedCards()" class="btn btn-info btn-sm">
+                                        <i class="fas fa-eye me-1"></i> View Selected
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grid Section -->
+                        <div class="grid-content p-4">
+                            <div class="grid-wrapper border rounded p-3" id="gridWrapper">
+                                <div class="card-grid-enhanced" id="cardGrid">
+                                    <!-- Cards 1-150 will be generated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Controls Section -->
+                        <div class="card-footer bg-light p-4">
+                            <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                    <div class="input-group">
+                                        <span class="input-group-text fw-medium">BET (ETB)</span>
+                                        <button onclick="adjustCounter('bet', -10)" class="btn btn-danger">-</button>
+                                        <input type="number" id="betCounter" value="10" class="form-control text-center fw-bold" style="max-width: 80px;">
+                                        <button onclick="adjustCounter('bet', 10)" class="btn btn-primary">+</button>
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <span class="input-group-text fw-medium">Add Card #</span>
+                                        <input type="number" id="cardNumberInput" placeholder="1-150" class="form-control text-center" style="max-width: 100px;" min="1" max="150">
+                                        <button onclick="addCardByNumber()" class="btn btn-primary">
+                                            <i class="fas fa-plus me-1"></i>Add
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <button onclick="startGame()" class="btn btn-success btn-lg">
+                                        <i class="fas fa-play me-2"></i>Start Game
+                                    </button>
+                                    <button onclick="toggleFullScreen()" class="btn btn-primary btn-lg" id="fullScreenBtn">
+                                        <i class="fas fa-expand me-2"></i>Full Screen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Play View -->
+            <div id="gameView" class="view d-none">
+                <div class="main-content">
+                    <div class="row g-4">
+                        <!-- Current Call Section -->
+                        <div class="col-lg-3">
+                            <div class="card bg-secondary text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Current Call</h5>
+                                    <div class="d-flex flex-column align-items-center gap-3">
+                                        <div class="current-ball">
+                                            <div id="currentLetter" class="text-white small">?</div>
+                                            <div id="currentNumber">?</div>
+                                        </div>
+                                        <div>
+                                            <div id="callProgress">0 / 75</div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="game-footer">
+                                            🏆 WINNER GETS:- <span class="winner-amount" id="currentWinnerPrize">0.00</span> ETB 🏆
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bingo Board -->
+                        <div class="col-lg-9">
+                            <div class="card bg-primary">
+                                <div class="card-body">
+                                    <div class="bg-white rounded p-3 mb-3">
+                                        <div id="gameBoard">
+                                            <!-- Game board will be generated by JavaScript -->
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex gap-2">
+                                            <button onclick="showCustomAlert('Game functions coming soon!')" class="btn btn-info">START</button>
+                                            <button onclick="showCustomAlert('Game functions coming soon!')" class="btn btn-secondary">PAUSE</button>
+                                            <button onclick="showCustomAlert('Game functions coming soon!')" class="btn btn-secondary">RESET</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales View -->
+            <div id="salesView" class="view d-none">
+                <div class="main-content">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-dollar-sign me-2"></i>Sales Dashboard</h2>
+                        <button onclick="loadSales()" class="btn btn-primary">
+                            <i class="fas fa-sync-alt me-1"></i> Refresh
+                        </button>
+                    </div>
+
+                    <!-- Sales Filters -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">From Date</label>
+                                    <input type="date" id="salesFromDate" class="form-control">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">To Date</label>
+                                    <input type="date" id="salesToDate" class="form-control">
+                                </div>
+                                <div class="col-md-3" id="salesUserFilter">
+                                    <label class="form-label">User</label>
+                                    <select id="salesUserSelect" class="form-select">
+                                        <option value="">All Users</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button onclick="filterSales()" class="btn btn-primary w-100">
+                                        <i class="fas fa-filter me-1"></i> Filter
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sales Statistics -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="h4" id="totalSalesCount">0</div>
+                                    <div>Total Games</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="h4" id="totalSalesAmount">0 ETB</div>
+                                    <div>Total Sales</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="h4" id="totalPrizes">0 ETB</div>
+                                    <div>Total Prizes</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <div class="h4" id="totalCommission">0 ETB</div>
+                                    <div>Total Commission</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sales Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Sales History</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="salesLoading" class="loading text-center">Loading sales data...</div>
+                            <div id="salesError" class="error d-none"></div>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="salesTable">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Game #</th>
+                                            <th>User</th>
+                                            <th>Total Pool</th>
+                                            <th>Prize Amount</th>
+                                            <th>Commission</th>
+                                            <th>User Commission</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="salesTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance View -->
+            <div id="balanceView" class="view d-none">
+                <div class="main-content">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-balance-scale me-2"></i>Balance Management</h2>
+                        <button onclick="loadBalance()" class="btn btn-primary">
+                            <i class="fas fa-sync-alt me-1"></i> Refresh
+                        </button>
+                    </div>
+
+                    <!-- Balance Summary -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="h3" id="userCredit">0 ETB</div>
+                                    <div>Credit</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="h3" id="userBalance">0 ETB</div>
+                                    <div>Available Balance</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="h3" id="userCommissionEarned">0 ETB</div>
+                                    <div>Commission Earned</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Recent Transactions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="balanceLoading" class="loading text-center">Loading balance data...</div>
+                            <div id="balanceError" class="error d-none"></div>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Description</th>
+                                            <th>Type</th>
+                                            <th>Amount</th>
+                                            <th>Balance After</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="balanceTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No transactions found</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settingView" class="view d-none">
+                <div class="main-content">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-cog me-2"></i>Settings</h2>
+                        <button onclick="saveSettings()" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i> Save Settings
+                        </button>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- Game Settings -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Game Settings</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Voice Speed</label>
+                                        <select id="voiceSpeed" class="form-select">
+                                            <option value="1">1 - Very Slow</option>
+                                            <option value="2">2 - Slow</option>
+                                            <option value="3">3 - Normal</option>
+                                            <option value="4">4 - Fast</option>
+                                            <option value="5">5 - Very Fast</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Voice Type</label>
+                                        <select id="voiceType" class="form-select">
+                                            <option value="default">Default</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Winner Percentage (%)</label>
+                                        <input type="number" id="winnerPercentage" class="form-control" min="0" max="100" step="0.1">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Commission Percentage (%)</label>
+                                        <input type="number" id="commissionPercentage" class="form-control" min="0" max="100" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Winning Patterns -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Winning Patterns</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" id="patternLine" class="form-check-input" checked>
+                                            <label class="form-check-label" for="patternLine">Line (Horizontal/Vertical)</label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" id="patternDiagonal" class="form-check-input" checked>
+                                            <label class="form-check-label" for="patternDiagonal">Diagonal</label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" id="patternFourCorners" class="form-check-input">
+                                            <label class="form-check-label" for="patternFourCorners">Four Corners</label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" id="patternFullHouse" class="form-check-input">
+                                            <label class="form-check-label" for="patternFullHouse">Full House</label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" id="patternBlackout" class="form-check-input">
+                                            <label class="form-check-label" for="patternBlackout">Blackout</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="settingsLoading" class="loading d-none text-center">Saving settings...</div>
+                    <div id="settingsError" class="error d-none"></div>
+                    <div id="settingsSuccess" class="alert alert-success d-none">Settings saved successfully!</div>
+                </div>
+            </div>
+
+            <!-- Users View -->
+            <div id="usersView" class="view d-none">
+                <div class="main-content">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-users me-2"></i>User Management</h2>
+                        <div class="d-flex gap-2">
+                            <button onclick="loadUsers()" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                            <button onclick="openCreateUser()" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i> Create User
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="usersLoading" class="loading text-center">Loading users...</div>
+                            <div id="usersError" class="error d-none"></div>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="usersTable">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Username</th>
+                                            <th>Shop Name</th>
+                                            <th>Credit</th>
+                                            <th>Balance</th>
+                                            <th>Commission %</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Global variables
+        let currentView = 'dashboard';
+        let currentUser = null;
+        let gameState = {
+            selectedCards: []
+        };
+        let isFullScreen = false;
+
+        // Custom alert function to replace alert()
+        function showCustomAlert(message, title = 'Info') {
+            const modal = document.createElement('div');
+            modal.className = 'fixed-top d-flex align-items-center justify-content-center bg-dark bg-opacity-50';
+            modal.style.zIndex = '2000';
+            modal.innerHTML = `
+                <div class="bg-white rounded p-4 shadow-lg" style="max-width: 400px; width: 90%;">
+                    <h5 class="text-dark mb-3">${title}</h5>
+                    <p class="text-dark mb-3">${message}</p>
+                    <button class="btn btn-primary" onclick="this.closest('.fixed-top').remove()">OK</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Modal management functions
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('show');
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+            }
+        }
+
+        // Full Screen functionality
+        function toggleFullScreen() {
+            const btn = document.getElementById('fullScreenBtn');
+            const icon = btn.querySelector('i');
+            
+            if (!isFullScreen) {
+                // Enter full screen
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen();
+                }
+                
+                // Add full screen class
+                document.body.classList.add('fullscreen-active');
+                isFullScreen = true;
+                icon.className = 'fas fa-compress me-2';
+                btn.innerHTML = '<i class="fas fa-compress me-2"></i>Exit Full Screen';
+            } else {
+                // Exit full screen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                
+                // Remove full screen class
+                document.body.classList.remove('fullscreen-active');
+                isFullScreen = false;
+                icon.className = 'fas fa-expand me-2';
+                btn.innerHTML = '<i class="fas fa-expand me-2"></i>Full Screen';
+            }
+        }
+
+        // Listen for fullscreen change events
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            const btn = document.getElementById('fullScreenBtn');
+            const icon = btn.querySelector('i');
+            
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                // Exited fullscreen
+                document.body.classList.remove('fullscreen-active');
+                isFullScreen = false;
+                icon.className = 'fas fa-expand me-2';
+                btn.innerHTML = '<i class="fas fa-expand me-2"></i>Full Screen';
+            }
+        }
+
+        // Add card by number function
+        function addCardByNumber() {
+            const input = document.getElementById('cardNumberInput');
+            const cardNumber = parseInt(input.value);
+            
+            if (!cardNumber || cardNumber < 1 || cardNumber > 150) {
+                showCustomAlert('Please enter a valid card number between 1 and 150.', 'Invalid Input');
+                return;
+            }
+            
+            // Check if card is already selected
+            if (gameState.selectedCards.includes(cardNumber)) {
+                showCustomAlert(`Card #${cardNumber} is already selected.`, 'Card Already Selected');
+                input.value = '';
+                return;
+            }
+            
+            // Add the card
+            toggleCard(cardNumber);
+            input.value = '';
+            
+            // Show success message
+            showCustomAlert(`Card #${cardNumber} has been added successfully!`, 'Card Added');
+        }
+
+        // Show unselected cards
+        function showUnselectedCards() {
+            const unselectedCards = [];
+            for (let i = 1; i <= 150; i++) {
+                if (!gameState.selectedCards.includes(i)) {
+                    unselectedCards.push(i);
+                }
+            }
+            
+            if (unselectedCards.length === 0) {
+                showCustomAlert('All cards are selected!', 'No Unselected Cards');
+                return;
+            }
+            
+            let html = '<div class="row g-3">';
+            html += '<div class="col-12"><h6>Unselected Cards (' + unselectedCards.length + ')</h6></div>';
+            
+            // Display unselected cards in a grid
+            unselectedCards.forEach((cardNumber, index) => {
+                if (index % 10 === 0) {
+                    html += '<div class="col-12"><div class="d-flex flex-wrap gap-2">';
+                }
+                html += `<span class="badge bg-secondary p-2">${cardNumber}</span>`;
+                if (index % 10 === 9 || index === unselectedCards.length - 1) {
+                    html += '</div></div>';
+                }
+            });
+            
+            html += '</div>';
+            
+            document.getElementById('cardPreviewTitle').textContent = `Unselected Cards (${unselectedCards.length} remaining)`;
+            document.getElementById('cardPreviewContent').innerHTML = html;
+            document.getElementById('selectCardBtn').style.display = 'none';
+            
+            openModal('cardPreviewModal');
+        }
+
+        // Generate unique bingo card based on card number
+        function generateBingoCard(cardNumber) {
+            // Use card number as seed for consistent generation
+            const seed = cardNumber;
+            
+            // Simple seeded random function
+            function seededRandom(seed) {
+                const x = Math.sin(seed) * 10000;
+                return x - Math.floor(x);
+            }
+            
+            const card = {
+                number: cardNumber,
+                grid: []
+            };
+            
+            // Generate numbers for each column
+            const columns = {
+                B: [], // 1-15
+                I: [], // 16-30  
+                N: [], // 31-45
+                G: [], // 46-60
+                O: []  // 61-75
+            };
+            
+            // Generate B column (1-15)
+            const bNumbers = [];
+            for (let i = 1; i <= 15; i++) bNumbers.push(i);
+            for (let i = 0; i < 5; i++) {
+                const randIndex = Math.floor(seededRandom(seed + i) * bNumbers.length);
+                columns.B.push(bNumbers.splice(randIndex, 1)[0]);
+            }
+            
+            // Generate I column (16-30)
+            const iNumbers = [];
+            for (let i = 16; i <= 30; i++) iNumbers.push(i);
+            for (let i = 0; i < 5; i++) {
+                const randIndex = Math.floor(seededRandom(seed + i + 10) * iNumbers.length);
+                columns.I.push(iNumbers.splice(randIndex, 1)[0]);
+            }
+            
+            // Generate N column (31-45) with FREE space
+            const nNumbers = [];
+            for (let i = 31; i <= 45; i++) nNumbers.push(i);
+            for (let i = 0; i < 5; i++) {
+                if (i === 2) {
+                    columns.N.push('FREE');
+                } else {
+                    const randIndex = Math.floor(seededRandom(seed + i + 20) * nNumbers.length);
+                    columns.N.push(nNumbers.splice(randIndex, 1)[0]);
+                }
+            }
+            
+            // Generate G column (46-60)
+            const gNumbers = [];
+            for (let i = 46; i <= 60; i++) gNumbers.push(i);
+            for (let i = 0; i < 5; i++) {
+                const randIndex = Math.floor(seededRandom(seed + i + 30) * gNumbers.length);
+                columns.G.push(gNumbers.splice(randIndex, 1)[0]);
+            }
+            
+            // Generate O column (61-75)
+            const oNumbers = [];
+            for (let i = 61; i <= 75; i++) oNumbers.push(i);
+            for (let i = 0; i < 5; i++) {
+                const randIndex = Math.floor(seededRandom(seed + i + 40) * oNumbers.length);
+                columns.O.push(oNumbers.splice(randIndex, 1)[0]);
+            }
+            
+            // Create grid
+            for (let row = 0; row < 5; row++) {
+                card.grid.push([
+                    columns.B[row],
+                    columns.I[row], 
+                    columns.N[row],
+                    columns.G[row],
+                    columns.O[row]
+                ]);
+            }
+            
+            return card;
+        }
+
+        // Render bingo card HTML
+        function renderBingoCard(card, size = 'large') {
+            const sizeClass = size === 'small' ? 'bingo-card-small' : 'bingo-card-large';
+            
+            let html = `
+                <div class="bingo-card ${sizeClass}">
+                    <div class="bingo-card-header">
+                        <h3>BINGO Card #${card.number}</h3>
+                    </div>
+                    <div class="bingo-card-grid">
+                        <div class="bingo-header-row">
+                            <div class="bingo-header-cell">B</div>
+                            <div class="bingo-header-cell">I</div>
+                            <div class="bingo-header-cell">N</div>
+                            <div class="bingo-header-cell">G</div>
+                            <div class="bingo-header-cell">O</div>
+                        </div>
+            `;
+            
+            card.grid.forEach((row, rowIndex) => {
+                html += '<div class="bingo-card-row">';
+                row.forEach((cell, colIndex) => {
+                    const isFree = cell === 'FREE';
+                    const cellClass = isFree ? 'bingo-cell free-cell' : 'bingo-cell';
+                    html += `<div class="${cellClass}">${cell}</div>`;
+                });
+                html += '</div>';
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+
+        // Show card preview
+        function showCardPreview(cardNumber) {
+            const card = generateBingoCard(cardNumber);
+            const cardHTML = renderBingoCard(card, 'large');
+            
+            document.getElementById('cardPreviewTitle').textContent = `BINGO Card #${cardNumber} Preview`;
+            document.getElementById('cardPreviewContent').innerHTML = cardHTML;
+            
+            // Update select button
+            const selectBtn = document.getElementById('selectCardBtn');
+            const isSelected = gameState.selectedCards.includes(cardNumber);
+            selectBtn.textContent = isSelected ? 'Deselect Card' : 'Select Card';
+            selectBtn.setAttribute('data-card-number', cardNumber);
+            selectBtn.style.display = 'block';
+            
+            openModal('cardPreviewModal');
+        }
+
+        // Select/deselect card from preview
+        function selectCardFromPreview() {
+            const cardNumber = parseInt(document.getElementById('selectCardBtn').getAttribute('data-card-number'));
+            toggleCard(cardNumber);
+            
+            // Update button text
+            const selectBtn = document.getElementById('selectCardBtn');
+            const isSelected = gameState.selectedCards.includes(cardNumber);
+            selectBtn.textContent = isSelected ? 'Deselect Card' : 'Select Card';
+        }
+
+        // Show selected cards preview
+        function showSelectedCards() {
+            if (gameState.selectedCards.length === 0) {
+                showCustomAlert('No cards selected yet. Please select some cards first.');
+                return;
+            }
+            
+            let html = '<div class="row g-3">';
+            gameState.selectedCards.forEach(cardNumber => {
+                const card = generateBingoCard(cardNumber);
+                const cardHTML = renderBingoCard(card, 'small');
+                html += `<div class="col-md-6">${cardHTML}</div>`;
+            });
+            html += '</div>';
+            
+            document.getElementById('cardPreviewTitle').textContent = `Selected Cards (${gameState.selectedCards.length})`;
+            document.getElementById('cardPreviewContent').innerHTML = html;
+            document.getElementById('selectCardBtn').style.display = 'none';
+            
+            openModal('cardPreviewModal');
+        }
+
+        // Login handling with improved error handling and validation
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorDiv = document.getElementById('loginError');
+            const loadingDiv = document.getElementById('loginLoading');
+            
+            // Clear previous errors
+            errorDiv.classList.add('d-none');
+            
+            // Validate input
+            if (!username || !password) {
+                errorDiv.textContent = 'Please enter both username and password.';
+                errorDiv.classList.remove('d-none');
+                return;
+            }
+            
+            loadingDiv.classList.remove('d-none');
+            
+            try {
+                // Updated API path (removed leading ./)
+                const response = await fetch(`api/users.php?action=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Invalid response format');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentUser = data.user;
+                    document.getElementById('userDisplay').textContent = currentUser.name;
+                    document.getElementById('welcomeUser').textContent = currentUser.name;
+                    
+                    // Hide login modal
+                    closeModal('loginModal');
+                    
+                    // Show main interface
+                    showView('dashboard');
+                    
+                    // Show/hide admin-only features
+                    updateUIForUser();
+                    
+                    // Load initial data
+                    updateDashboard();
+                } else {
+                    errorDiv.textContent = data.message || 'Login failed. Please check your credentials.';
+                    errorDiv.classList.remove('d-none');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                let errorMessage = 'Login failed. ';
+                
+                if (error.message.includes('404')) {
+                    errorMessage += 'API not found. Please check if the API files are properly set up.';
+                } else if (error.message.includes('500')) {
+                    errorMessage += 'Server error. Please check database connection.';
+                } else if (error.message.includes('Invalid response format')) {
+                    errorMessage += 'Invalid server response. Please check API configuration.';
+                } else {
+                    errorMessage += 'Please check your connection and try again.';
+                }
+                
+                errorDiv.textContent = errorMessage;
+                errorDiv.classList.remove('d-none');
+            }
+            
+            loadingDiv.classList.add('d-none');
+        }
+
+        // Update UI based on user role
+        function updateUIForUser() {
+            const userManagementMenu = document.getElementById('userManagementMenuItem');
+            const salesUserFilter = document.getElementById('salesUserFilter');
+            const quickNavUsers = document.getElementById('quickNavUsers');
+            
+            if (currentUser.role === 'admin') {
+                userManagementMenu.classList.remove('d-none');
+                quickNavUsers.classList.remove('d-none');
+                salesUserFilter.classList.remove('d-none');
+            } else {
+                userManagementMenu.classList.add('d-none');
+                quickNavUsers.classList.add('d-none');
+                salesUserFilter.classList.add('d-none');
+            }
+        }
+
+        // Update dashboard
+        function updateDashboard() {
+            document.getElementById('todayGames').textContent = '0';
+            document.getElementById('selectedCards').textContent = gameState.selectedCards.length;
+            document.getElementById('totalBalance').textContent = currentUser.balance.toFixed(2);
+            updateCardStatusDisplay();
+        }
+
+        // Update card status display
+        function updateCardStatusDisplay() {
+            const selectedCount = gameState.selectedCards.length;
+            const unselectedCount = 150 - selectedCount;
+            
+            document.getElementById('selectedCardCount').textContent = selectedCount;
+            document.getElementById('unselectedCardCount').textContent = unselectedCount;
+        }
+
+        // Logout function
+        function logout() {
+            currentUser = null;
+            gameState.selectedCards = [];
+            document.getElementById('loginModal').classList.add('show');
+            document.getElementById('loginModal').style.display = 'flex';
+            document.getElementById('loginUsername').value = 'admin';
+            document.getElementById('loginPassword').value = 'admin123';
+        }
+
+        // Sidebar toggle function
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            if (sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+                overlay.classList.add('d-none');
+            } else {
+                sidebar.classList.add('show');
+                overlay.classList.remove('d-none');
+            }
+        }
+        
+        function hideSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            // Only hide on mobile
+            if (window.innerWidth < 992) {
+                sidebar.classList.remove('show');
+                overlay.classList.add('d-none');
+            }
+        }
+
+        function showView(viewName) {
+            // Update active navigation
+            document.querySelectorAll('.nav-link, .nav-btn').forEach(link => {
+                if (link.dataset.view === viewName) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+
+            // Hide all views
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.add('d-none');
+            });
+            
+            // Show selected view
+            document.getElementById(viewName + 'View').classList.remove('d-none');
+            currentView = viewName;
+            
+            // Load data for specific views
+            switch(viewName) {
+                case 'users':
+                    if (currentUser && currentUser.role === 'admin') {
+                        loadUsers();
+                    }
+                    break;
+                case 'sales':
+                    loadSales();
+                    break;
+                case 'balance':
+                    loadBalance();
+                    break;
+                case 'setting':
+                    loadSettings();
+                    break;
+            }
+            
+            hideSidebar();
+        }
+
+        // Generate card grid with preview buttons
+        function generateCardGrid() {
+            const grid = document.getElementById('cardGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 1; i <= 150; i++) {
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'card-number-container';
+                
+                const card = document.createElement('div');
+                card.className = 'card-number unselected';
+                card.textContent = i;
+                card.onclick = () => toggleCard(i);
+                
+                const previewBtn = document.createElement('button');
+                previewBtn.className = 'card-preview-btn';
+                previewBtn.textContent = 'Preview';
+                previewBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    showCardPreview(i);
+                };
+                
+                cardContainer.appendChild(card);
+                cardContainer.appendChild(previewBtn);
+                grid.appendChild(cardContainer);
+            }
+        }
+
+        // Toggle card selection
+        function toggleCard(cardNumber) {
+            const cardElements = document.querySelectorAll('.card-number');
+            const cardElement = cardElements[cardNumber - 1];
+            const index = gameState.selectedCards.indexOf(cardNumber);
+            
+            if (index > -1) {
+                gameState.selectedCards.splice(index, 1);
+                cardElement.classList.remove('selected');
+                cardElement.classList.add('unselected');
+            } else {
+                gameState.selectedCards.push(cardNumber);
+                cardElement.classList.remove('unselected');
+                cardElement.classList.add('selected');
+            }
+            
+            updateSelectedCardsDisplay();
+            updateCardStatusDisplay();
+        }
+
+        // Update selected cards display
+        function updateSelectedCardsDisplay() {
+            document.getElementById('selectedCards').textContent = gameState.selectedCards.length;
+        }
+
+        // Clear all cards
+        function clearAllCards() {
+            gameState.selectedCards = [];
+            document.querySelectorAll('.card-number').forEach(card => {
+                card.classList.remove('selected');
+                card.classList.add('unselected');
+            });
+            updateSelectedCardsDisplay();
+            updateCardStatusDisplay();
+        }
+
+        // Generate game board
+        function generateGameBoard() {
+            const board = document.getElementById('gameBoard');
+            if (!board) return;
+            
+            board.innerHTML = '';
+            board.className = 'bingo-board';
+            
+            // Create BINGO header
+            const letters = ['B', 'I', 'N', 'G', 'O'];
+            letters.forEach(letter => {
+                const cell = document.createElement('div');
+                cell.className = 'board-cell bg-primary text-white fw-bold';
+                cell.textContent = letter;
+                board.appendChild(cell);
+            });
+            
+            // Create number grid (1-75)
+            for (let i = 1; i <= 75; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'board-cell bg-light border';
+                cell.textContent = i;
+                cell.id = `cell-${i}`;
+                board.appendChild(cell);
+            }
+        }
+
+        // Start game
+        function startGame() {
+            if (gameState.selectedCards.length === 0) {
+                showCustomAlert('Please select at least one card before starting the game.');
+                return;
+            }
+            
+            showView('game');
+        }
+
+        // User Management Functions with improved error handling
+        async function loadUsers() {
+            const loadingDiv = document.getElementById('usersLoading');
+            const errorDiv = document.getElementById('usersError');
+            const tableBody = document.getElementById('usersTableBody');
+            
+            loadingDiv.classList.remove('d-none');
+            errorDiv.classList.add('d-none');
+            
+            try {
+                const response = await fetch('api/users.php');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const users = await response.json();
+                
+                if (Array.isArray(users)) {
+                    tableBody.innerHTML = '';
+                    users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.name}</td>
+                            <td>${user.username}</td>
+                            <td>${user.shop_name}</td>
+                            <td>${user.credit.toFixed(2)} ETB</td>
+                            <td>${user.balance.toFixed(2)} ETB</td>
+                            <td>${user.commission_percent}%</td>
+                            <td><span class="badge bg-${user.role === 'admin' ? 'danger' : 'primary'}">${user.role}</span></td>
+                            <td><span class="badge bg-${user.is_restricted ? 'warning' : 'success'}">${user.is_restricted ? 'Restricted' : 'Active'}</span></td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button onclick="openEditUser(${user.id})" class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="openPasswordChange(${user.id})" class="btn btn-sm btn-outline-warning" title="Change Password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    <button onclick="openDeleteUser(${user.id}, '${user.name}')" class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                console.error('Load users error:', error);
+                errorDiv.textContent = 'Failed to load users: ' + error.message;
+                errorDiv.classList.remove('d-none');
+            }
+            
+            loadingDiv.classList.add('d-none');
+        }
+
+        function openCreateUser() {
+            document.getElementById('userModalTitle').textContent = 'Create User';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('restrictedSection').style.display = 'none';
+            document.getElementById('userError').classList.add('d-none');
+            openModal('userModal');
+        }
+
+        async function openEditUser(userId) {
+            try {
+                const response = await fetch('api/users.php');
+                const users = await response.json();
+                const user = users.find(u => u.id === userId);
+                
+                if (user) {
+                    document.getElementById('userModalTitle').textContent = 'Edit User';
+                    document.getElementById('userId').value = user.id;
+                    document.getElementById('userName').value = user.name;
+                    document.getElementById('userUsername').value = user.username;
+                    document.getElementById('userShopName').value = user.shop_name;
+                    document.getElementById('userPassword').value = '';
+                    document.getElementById('userPassword').removeAttribute('required');
+                    document.getElementById('userCredit').value = user.credit;
+                    document.getElementById('userPercent').value = user.commission_percent;
+                    document.getElementById('userRole').value = user.role;
+                    document.getElementById('userRestricted').checked = user.is_restricted;
+                    document.getElementById('restrictedSection').style.display = 'block';
+                    document.getElementById('userError').classList.add('d-none');
+                    openModal('userModal');
+                }
+            } catch (error) {
+                showCustomAlert('Failed to load user data: ' + error.message);
+            }
+        }
+
+        function openPasswordChange(userId) {
+            document.getElementById('passwordUserId').value = userId;
+            document.getElementById('passwordForm').reset();
+            document.getElementById('passwordError').classList.add('d-none');
+            openModal('passwordModal');
+        }
+
+        function openDeleteUser(userId, userName) {
+            document.getElementById('deleteUserId').value = userId;
+            document.getElementById('deleteUserName').textContent = userName;
+            openModal('deleteModal');
+        }
+
+        async function saveUser() {
+            const errorDiv = document.getElementById('userError');
+            const loadingDiv = document.getElementById('userLoading');
+            
+            const userId = document.getElementById('userId').value;
+            const isEdit = userId !== '';
+            
+            const userData = {
+                name: document.getElementById('userName').value,
+                username: document.getElementById('userUsername').value,
+                shopName: document.getElementById('userShopName').value,
+                password: document.getElementById('userPassword').value,
+                credit: parseFloat(document.getElementById('userCredit').value),
+                percent: parseFloat(document.getElementById('userPercent').value),
+                role: document.getElementById('userRole').value,
+                action: isEdit ? 'update' : 'create'
+            };
+
+            if (isEdit) {
+                userData.id = parseInt(userId);
+                userData.isRestricted = document.getElementById('userRestricted').checked;
+                if (!userData.password) {
+                    delete userData.password; // Don't update password if empty
+                }
+            }
+
+            errorDiv.classList.add('d-none');
+            loadingDiv.classList.remove('d-none');
+
+            try {
+                const response = await fetch('api/users.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    closeModal('userModal');
+                    loadUsers();
+                } else {
+                    errorDiv.textContent = result.message;
+                    errorDiv.classList.remove('d-none');
+                }
+            } catch (error) {
+                console.error('Save user error:', error);
+                errorDiv.textContent = 'Failed to save user: ' + error.message;
+                errorDiv.classList.remove('d-none');
+            }
+
+            loadingDiv.classList.add('d-none');
+        }
+
+        async function changePassword() {
+            const errorDiv = document.getElementById('passwordError');
+            const loadingDiv = document.getElementById('passwordLoading');
+            
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (newPassword !== confirmPassword) {
+                errorDiv.textContent = 'Passwords do not match';
+                errorDiv.classList.remove('d-none');
+                return;
+            }
+
+            const passwordData = {
+                action: 'change_password',
+                userId: parseInt(document.getElementById('passwordUserId').value),
+                currentPassword: document.getElementById('currentPassword').value,
+                newPassword: newPassword
+            };
+
+            errorDiv.classList.add('d-none');
+            loadingDiv.classList.remove('d-none');
+
+            try {
+                const response = await fetch('api/users.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(passwordData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    closeModal('passwordModal');
+                    showCustomAlert('Password changed successfully');
+                } else {
+                    errorDiv.textContent = result.message;
+                    errorDiv.classList.remove('d-none');
+                }
+            } catch (error) {
+                console.error('Change password error:', error);
+                errorDiv.textContent = 'Failed to change password: ' + error.message;
+                errorDiv.classList.remove('d-none');
+            }
+
+            loadingDiv.classList.add('d-none');
+        }
+
+        async function confirmDelete() {
+            const userId = document.getElementById('deleteUserId').value;
+
+            try {
+                const response = await fetch('api/users.php', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: parseInt(userId) })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    closeModal('deleteModal');
+                    loadUsers();
+                } else {
+                    showCustomAlert('Failed to delete user: ' + result.message);
+                }
+            } catch (error) {
+                showCustomAlert('Failed to delete user: ' + error.message);
+            }
+        }
+
+        // Sales Functions with improved error handling
+        async function loadSales() {
+            const loadingDiv = document.getElementById('salesLoading');
+            const errorDiv = document.getElementById('salesError');
+            const tableBody = document.getElementById('salesTableBody');
+            
+            loadingDiv.classList.remove('d-none');
+            errorDiv.classList.add('d-none');
+            
+            try {
+                let url = 'api/sales.php';
+                if (currentUser.role !== 'admin') {
+                    url += `?user_id=${currentUser.id}`;
+                }
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const sales = await response.json();
+                
+                if (Array.isArray(sales)) {
+                    tableBody.innerHTML = '';
+                    let totalSales = 0, totalPrizes = 0, totalCommission = 0;
+                    
+                    sales.forEach(sale => {
+                        totalSales += sale.total_pool;
+                        totalPrizes += sale.prize_amount;
+                        totalCommission += sale.commission;
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>#${sale.game_number}</td>
+                            <td>${sale.user_name}</td>
+                            <td>${sale.total_pool.toFixed(2)} ETB</td>
+                            <td>${sale.prize_amount.toFixed(2)} ETB</td>
+                            <td>${sale.commission.toFixed(2)} ETB</td>
+                            <td>${sale.user_commission.toFixed(2)} ETB (${sale.user_commission_rate}%)</td>
+                            <td>${new Date(sale.created_at).toLocaleDateString()}</td>
+                            <td><span class="badge bg-success">${sale.status}</span></td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    
+                    // Update statistics
+                    document.getElementById('totalSalesCount').textContent = sales.length;
+                    document.getElementById('totalSalesAmount').textContent = totalSales.toFixed(2) + ' ETB';
+                    document.getElementById('totalPrizes').textContent = totalPrizes.toFixed(2) + ' ETB';
+                    document.getElementById('totalCommission').textContent = totalCommission.toFixed(2) + ' ETB';
+                } else {
+                    throw new Error('Invalid response format');
+                }
+                
+                // Load users for filter (admin only)
+                if (currentUser.role === 'admin') {
+                    loadUsersForFilter();
+                }
+                
+            } catch (error) {
+                console.error('Load sales error:', error);
+                errorDiv.textContent = 'Failed to load sales: ' + error.message;
+                errorDiv.classList.remove('d-none');
+            }
+            
+            loadingDiv.classList.add('d-none');
+        }
+
+        async function loadUsersForFilter() {
+            try {
+                const response = await fetch('api/users.php');
+                const users = await response.json();
+                const select = document.getElementById('salesUserSelect');
+                
+                select.innerHTML = '<option value="">All Users</option>';
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load users for filter:', error);
+            }
+        }
+
+        async function filterSales() {
+            const fromDate = document.getElementById('salesFromDate').value;
+            const toDate = document.getElementById('salesToDate').value;
+            const userId = document.getElementById('salesUserSelect').value;
+            
+            let url = 'api/sales.php?';
+            const params = new URLSearchParams();
+            
+            if (fromDate) params.append('from_date', fromDate);
+            if (toDate) params.append('to_date', toDate);
+            if (userId) params.append('user_id', userId);
+            
+            try {
+                const response = await fetch(url + params.toString());
+                const sales = await response.json();
+                
+                const tableBody = document.getElementById('salesTableBody');
+                tableBody.innerHTML = '';
+                
+                let totalSales = 0, totalPrizes = 0, totalCommission = 0;
+                
+                sales.forEach(sale => {
+                    totalSales += sale.total_pool;
+                    totalPrizes += sale.prize_amount;
+                    totalCommission += sale.commission;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>#${sale.game_number}</td>
+                        <td>${sale.user_name}</td>
+                        <td>${sale.total_pool.toFixed(2)} ETB</td>
+                        <td>${sale.prize_amount.toFixed(2)} ETB</td>
+                        <td>${sale.commission.toFixed(2)} ETB</td>
+                        <td>${sale.user_commission.toFixed(2)} ETB (${sale.user_commission_rate}%)</td>
+                        <td>${new Date(sale.created_at).toLocaleDateString()}</td>
+                        <td><span class="badge bg-success">${sale.status}</span></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                // Update statistics
+                document.getElementById('totalSalesCount').textContent = sales.length;
+                document.getElementById('totalSalesAmount').textContent = totalSales.toFixed(2) + ' ETB';
+                document.getElementById('totalPrizes').textContent = totalPrizes.toFixed(2) + ' ETB';
+                document.getElementById('totalCommission').textContent = totalCommission.toFixed(2) + ' ETB';
+                
+            } catch (error) {
+                showCustomAlert('Failed to filter sales: ' + error.message);
+            }
+        }
+
+        // Balance Functions
+        function loadBalance() {
+            const loadingDiv = document.getElementById('balanceLoading');
+            const errorDiv = document.getElementById('balanceError');
+            
+            loadingDiv.classList.remove('d-none');
+            errorDiv.classList.add('d-none');
+            
+            // Update balance information
+            document.getElementById('userCredit').textContent = currentUser.credit.toFixed(2) + ' ETB';
+            document.getElementById('userBalance').textContent = currentUser.balance.toFixed(2) + ' ETB';
+            document.getElementById('userCommissionEarned').textContent = (currentUser.commission_earned || 0).toFixed(2) + ' ETB';
+            
+            loadingDiv.classList.add('d-none');
+        }
+
+        // Settings Functions
+        function loadSettings() {
+            // Load default settings
+            document.getElementById('voiceSpeed').value = '4';
+            document.getElementById('voiceType').value = 'default';
+            document.getElementById('winnerPercentage').value = '71.2';
+            document.getElementById('commissionPercentage').value = '28.8';
+        }
+
+        function saveSettings() {
+            const loadingDiv = document.getElementById('settingsLoading');
+            const errorDiv = document.getElementById('settingsError');
+            const successDiv = document.getElementById('settingsSuccess');
+            
+            loadingDiv.classList.remove('d-none');
+            errorDiv.classList.add('d-none');
+            successDiv.classList.add('d-none');
+            
+            // Simulate saving settings
+            setTimeout(() => {
+                loadingDiv.classList.add('d-none');
+                successDiv.classList.remove('d-none');
+                
+                setTimeout(() => {
+                    successDiv.classList.add('d-none');
+                }, 3000);
+            }, 1000);
+        }
+
+        // Utility functions
+        function adjustCounter(type, amount) {
+            const input = document.getElementById('betCounter');
+            const currentValue = parseInt(input.value) || 0;
+            const newValue = Math.max(10, currentValue + amount);
+            input.value = newValue;
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit'
+            };
+            document.getElementById('currentDateTime').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        // Handle responsive behavior
+        function handleResize() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            if (window.innerWidth >= 992) {
+                // Desktop: show sidebar, hide overlay
+                overlay.classList.add('d-none');
+            } else {
+                // Mobile: keep current state
+                if (sidebar.classList.contains('show')) {
+                    overlay.classList.remove('d-none');
+                }
+            }
+        }
+
+        // Handle Enter key for card number input
+        function handleCardNumberInput(e) {
+            if (e.key === 'Enter') {
+                addCardByNumber();
+            }
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            generateCardGrid();
+            generateGameBoard();
+            
+            // Handle login form
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            
+            // Handle card number input Enter key
+            document.getElementById('cardNumberInput').addEventListener('keypress', handleCardNumberInput);
+            
+            // Handle window resize
+            window.addEventListener('resize', handleResize);
+            
+            // Set initial active view
+            showView('dashboard');
+        });
+    </script>
+</body>
+</html>
